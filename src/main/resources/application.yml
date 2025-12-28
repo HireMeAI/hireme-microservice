@@ -14,10 +14,16 @@ spring:
     hibernate:
       ddl-auto: update
 
+  jwt:
+    secret: ${JWT_SECRET:7a45678901234567890123456789012345678901234567890123456789012345}
+    expiration: ${JWT_EXPIRATION:3600000}
+    refresh-token:
+      expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
 server:
   port: ${APP_PORT}
   servlet:
-    context-path: /api/auth
+    context-path: /api
     
 # Swagger/OpenAPI Configuration
 springdoc:
