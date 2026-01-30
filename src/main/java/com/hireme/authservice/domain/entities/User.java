@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -39,6 +40,11 @@ public class User  extends Auditable {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TypeRole role;
+
+    private LocalDateTime confirmedAt;
+
+    @Column(name = "last_email_sent_at")
+    private LocalDateTime lastEmailSentAt;
 
     public String getFullName() {
         return firstName + " " + lastName;

@@ -1,9 +1,6 @@
 package com.hireme.authservice.services;
 
-import com.hireme.authservice.dtos.LoginRequestDto;
-import com.hireme.authservice.dtos.LoginResponseDto;
-import com.hireme.authservice.dtos.UserRegisterDto;
-import com.hireme.authservice.dtos.UserResponseDto;
+import com.hireme.authservice.dtos.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -19,4 +16,6 @@ public interface UserService {
     void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException;
     void logoutAllDevices(String authHeader);
     void logout(String authHeader);
+    void confirmToken(String token);
+    void resendVerificationEmail(ResendEmailRequest request);
 }

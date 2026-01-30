@@ -1,5 +1,6 @@
 package com.hireme.authservice.services;
 
+import com.hireme.authservice.domain.entities.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -25,6 +26,8 @@ public class JwtService {
     @Value("${spring.jwt.refresh-token.expiration}")
     private long refreshTokenExpiration;
 
+    private long emailVerificationTokenExpiration = 15 * 60 * 1000;
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -44,6 +47,11 @@ public class JwtService {
         return buildToken(claims, userDetails, jwtExpiration);
     }
 
+    public String generateEmailVerificationToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        return buildToken(claims, user, emailVerificationTokenExpiration);
+    }
+
     public String generateRefreshToken(UserDetails userDetails, String sessionId) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("sid", sessionId);
@@ -59,6 +67,17 @@ public class JwtService {
                 .builder()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSignInKey())
+                .compact();
+    }
+
+    private String buildToken(Map<String, Object> extraClaims, User user, long expiration) {
+        return Jwts
+                .builder()
+                .claims(extraClaims)
+                .subject(user.getEmail())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey())
