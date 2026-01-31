@@ -1,3 +1,10 @@
+app:
+  base-url: ${APP_BASE_URL:http://localhost:${APP_PORT:8080}}
+  mail:
+    from:
+        address: ${MAIL_USERNAME}
+        name: HireMe App
+
 spring:
   application:
     name: AuthService
@@ -12,13 +19,30 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
 
   jwt:
     secret: ${JWT_SECRET:7a45678901234567890123456789012345678901234567890123456789012345}
     expiration: ${JWT_EXPIRATION:3600000}
     refresh-token:
       expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+            connectiontimeout: 5000
+            timeout: 5000
+            writetimeout: 5000
 
 server:
   port: ${APP_PORT}

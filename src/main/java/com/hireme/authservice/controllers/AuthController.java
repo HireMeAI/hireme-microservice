@@ -1,9 +1,6 @@
 package com.hireme.authservice.controllers;
 
-import com.hireme.authservice.dtos.LoginRequestDto;
-import com.hireme.authservice.dtos.LoginResponseDto;
-import com.hireme.authservice.dtos.UserRegisterDto;
-import com.hireme.authservice.dtos.UserResponseDto;
+import com.hireme.authservice.dtos.*;
 import com.hireme.authservice.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -130,9 +127,17 @@ public class AuthController {
         userService.logout(authHeader);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/confirm")
+    public ResponseEntity<String> confirmEmail(@RequestParam("token") String token){
+        userService.confirmToken(token);
+        return ResponseEntity.ok("email confirmer");
+    }
 
-
-
+    @PostMapping("/resend-verification-email")
+    public ResponseEntity<Void> resendVerificationEmail(@RequestBody @Valid ResendEmailRequest request){
+        userService.resendVerificationEmail(request);
+        return ResponseEntity.noContent().build();
+    }
 
 
 

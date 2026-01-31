@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Vérifier e-mail</title>
+</head>
+<body>
+<p > Bonjour <span th:text="${username}"> user </span>, </p>
+<p>Bienvenue sur HireMe ! Pour commencer, vous devez confirmer votre adresse e-mail.</p>
+<a href="#" th:href="${confirmedUrl}" >Confirmer l'adresse e-mail</a>
+</body>
+</html>

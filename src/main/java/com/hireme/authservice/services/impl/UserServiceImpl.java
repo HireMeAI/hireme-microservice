@@ -4,24 +4,25 @@ import com.hireme.authservice.domain.entities.Token;
 import com.hireme.authservice.domain.entities.User;
 import com.hireme.authservice.domain.enums.TypeRole;
 import com.hireme.authservice.domain.enums.TypeToken;
-import com.hireme.authservice.dtos.LoginRequestDto;
-import com.hireme.authservice.dtos.LoginResponseDto;
-import com.hireme.authservice.dtos.UserRegisterDto;
-import com.hireme.authservice.dtos.UserResponseDto;
+import com.hireme.authservice.dtos.*;
 import com.hireme.authservice.exception.ApiException;
 import com.hireme.authservice.exception.ErrorCode;
 import com.hireme.authservice.repositories.TokenRepository;
 import com.hireme.authservice.repositories.UserRepository;
 import com.hireme.authservice.services.CustomUserDetailsService;
+import com.hireme.authservice.services.EmailService;
 import com.hireme.authservice.services.JwtService;
 import com.hireme.authservice.services.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,8 +30,8 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 
 
 @Service
@@ -44,6 +45,9 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final TokenRepository tokenRepository;
+    private final EmailService emailService;
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     @Override
     public UserResponseDto getUserById(String userId) {
@@ -51,62 +55,67 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponseDto registerCandidate(UserRegisterDto userRegisterDto) {
        return this.registerWithRole(userRegisterDto, TypeRole.CANDIDATE);
     }
 
     @Override
+    @Transactional
     public UserResponseDto registerRecruiter(UserRegisterDto userRegisterDto) {
         return this.registerWithRole(userRegisterDto, TypeRole.RECRUITER);
     }
 
     @Override
+    @Transactional
     public UserResponseDto registerAdmin(UserRegisterDto userRegisterDto) {
         return this.registerWithRole(userRegisterDto, TypeRole.ADMIN);
     }
 
     @Override
+    @Transactional
     public LoginResponseDto loginUser(LoginRequestDto request) {
-
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND,
-                        "Email ou mot de passe incorrect"));
-
         try{
-            authenticationManager.authenticate(
+            Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getEmail(),
                             request.getPassword()));
 
-        } catch (AuthenticationException ex){
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+
+            User user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Utilisateur introuvable"));
+
+            if (user.getConfirmedAt() == null) {
+                throw new ApiException(ErrorCode.EMAIL_NOT_VERIFIED, "Veuillez vérifier votre email.");
+            }
+            String sessionId = UUID.randomUUID().toString();
+            String jwtToken = jwtService.generateToken(userDetails, sessionId);
+            String refreshToken = jwtService.generateRefreshToken(userDetails, sessionId);
+
+            saveUserToken(user, jwtToken, TypeToken.ACCESS, sessionId);
+            saveUserToken(user, refreshToken, TypeToken.REFRESH, sessionId);
+
+            UserResponseDto userResponseDto = mapToDto(user);
+            return LoginResponseDto.builder()
+                    .user(userResponseDto)
+                    .accessToken(jwtToken)
+                    .refreshToken(refreshToken)
+                    .build();
+
+        }catch (ApiException ex) {
+            throw ex;}
+        catch (AuthenticationException ex){
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS,
                     "Email ou mot de passe incorrect");
-
         }catch (Exception e){
             log.error("Authentication error: {}", e.getMessage());
-            throw new RuntimeException();
+            throw new RuntimeException("Erreur lors de la connexion");
         }
+    }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()));
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-        String sessionId = UUID.randomUUID().toString();
-        String jwtToken = jwtService.generateToken(userDetails, sessionId);
-        String refreshToken = jwtService.generateRefreshToken(userDetails, sessionId);
-
-        saveUserToken(user, jwtToken, TypeToken.ACCESS, sessionId);
-        saveUserToken(user, refreshToken, TypeToken.REFRESH, sessionId);
-
-        UserResponseDto userResponseDto = mapToDto(user);
-
-        return LoginResponseDto.builder()
-                .user(userResponseDto)
-                .accessToken(jwtToken)
-                .refreshToken(refreshToken)
-                .build();
+    private void saveUserToken(User user, String jwtToken, TypeToken type) {
+        saveUserToken(user, jwtToken, type, null);
     }
 
     private void saveUserToken(User user, String jwtToken, TypeToken type, String sessionId) {
@@ -147,7 +156,6 @@ public class UserServiceImpl implements UserService {
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS, "Invalid token: could not extract user");
         }
     }
-
 
     @Override
     public void refreshToken(
@@ -241,24 +249,41 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Transactional
+    public UserResponseDto registerWithRole(UserRegisterDto dto, TypeRole role) {
 
-
-    public UserResponseDto registerWithRole(UserRegisterDto userRegisterDto, TypeRole role) {
-
-        if(userRepository.existsByEmail(userRegisterDto.getEmail())){
-            throw new ApiException(ErrorCode.EMAIL_ALREADY_EXISTS,
-                    "Email "+ userRegisterDto.getEmail() + " is already registered");
+        if(userRepository.existsByEmail(dto.getEmail())){
+            throw new ApiException(ErrorCode.RESOURCE_ALREADY_EXISTS,
+                    "Email "+ dto.getEmail() + " is already registered");
         }
 
         User user = User.builder()
-                .email(userRegisterDto.getEmail())
-                .password(passwordEncoder.encode(userRegisterDto.getPassword()))
-                .firstName(userRegisterDto.getFirstName())
-                .lastName(userRegisterDto.getLastName())
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .firstName(dto.getFirstName())
+                .lastName(dto.getLastName())
                 .role(role)
                 .build();
+        user = userRepository.save(user);
 
-        return mapToDto(userRepository.save(user));
+        if(!TypeRole.ADMIN.equals(role)){
+            String emailVerificationToken = jwtService.generateEmailVerificationToken(user);
+            saveUserToken(user, emailVerificationToken, TypeToken.EMAIL_VERIFICATION);
+            confimationEmail(user, emailVerificationToken);
+        }
+        return mapToDto(user);
+
+    }
+
+    public void confimationEmail(User newUser, String token){
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("confirmedUrl",baseUrl+ "/api/auth/confirm?token=" + token);
+        variables.put("username", newUser.getFirstName());
+        try {
+            emailService.sendVerificationEmail(newUser.getEmail(),"Vérifier l'adresse e-mail",variables);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
 
     }
 
@@ -271,6 +296,50 @@ public class UserServiceImpl implements UserService {
                 .fullName(user.getFullName())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    @Transactional
+    @Override
+    public void confirmToken(String token){
+
+        Token confirmToken = tokenRepository
+                .findByValue(token)
+                .orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Token introuvable"));
+
+        if (confirmToken.getExpiresAt().before(new Date())) {
+            throw new ApiException(ErrorCode.TOKEN_EXPIRED, "Le token a expiré.");
+        }
+        User user = confirmToken.getUser();
+
+        if(user.getConfirmedAt() != null){
+            throw new ApiException(ErrorCode.RESOURCE_ALREADY_EXISTS, "Email déjà confirmé.");
+        }
+
+        user.setConfirmedAt(LocalDateTime.now());
+        confirmToken.setRevoked(true);
+
+    }
+
+    @Override
+    @Transactional
+    public void resendVerificationEmail(ResendEmailRequest request) {
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+        if (user == null || user.getConfirmedAt() != null) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (user.getLastEmailSentAt() != null &&
+                user.getLastEmailSentAt().plusMinutes(2).isAfter(now)) {
+            throw new ApiException(ErrorCode.TOO_MANY_REQUESTS,
+                    "Veuillez patienter 2 minutes avant de demander un nouvel envoi.");
+        }
+        user.setLastEmailSentAt(now);
+
+        tokenRepository.revokeAllUserTokensByType(user.getId(), TypeToken.EMAIL_VERIFICATION);
+
+        String emailVerificationToken = jwtService.generateEmailVerificationToken(user);
+        saveUserToken(user, emailVerificationToken, TypeToken.EMAIL_VERIFICATION);
+        confimationEmail(user, emailVerificationToken);
     }
 
 }
