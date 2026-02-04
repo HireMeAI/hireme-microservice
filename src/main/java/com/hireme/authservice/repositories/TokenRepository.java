@@ -27,6 +27,14 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
             "WHERE t.user.id = :userId AND t.tokenType = :type AND (t.revoked = false OR t.expired = false)")
     void revokeAllUserTokensByType(UUID userId, TypeToken type);
 
+    @Modifying
+    @Query("""
+        update Token t 
+        set t.expired = true, t.revoked = true 
+        where t.sessionId = :sessionId
+    """)
+    void revokeAllBySessionId(String sessionId);
+
     Optional<Token> findByValue(String token);
 
     List<Token> findBySessionId(String sessionId);

@@ -26,7 +26,7 @@ public class JwtService {
     @Value("${spring.jwt.refresh-token.expiration}")
     private long refreshTokenExpiration;
 
-    private long emailVerificationTokenExpiration = 15 * 60 * 1000;
+    private long actionTokenExpiration = 15 * 60 * 1000;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -47,9 +47,9 @@ public class JwtService {
         return buildToken(claims, userDetails, jwtExpiration);
     }
 
-    public String generateEmailVerificationToken(User user) {
+    public String generateActionToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        return buildToken(claims, user, emailVerificationTokenExpiration);
+        return buildToken(claims, user, actionTokenExpiration);
     }
 
     public String generateRefreshToken(UserDetails userDetails, String sessionId) {

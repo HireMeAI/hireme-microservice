@@ -1,5 +1,6 @@
 package com.hireme.authservice.controllers;
 
+import com.hireme.authservice.domain.enums.TypeToken;
 import com.hireme.authservice.dtos.*;
 import com.hireme.authservice.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -135,10 +136,25 @@ public class AuthController {
 
     @PostMapping("/resend-verification-email")
     public ResponseEntity<Void> resendVerificationEmail(@RequestBody @Valid ResendEmailRequest request){
-        userService.resendVerificationEmail(request);
+        userService.processRequest(request.email(), TypeToken.EMAIL_VERIFICATION);
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/reset-password-email")
+    public ResponseEntity<String> resetPasswordEmail(@RequestBody @Valid ResetRequest request){
+        userService.processRequest(request.email(), TypeToken.RESET_PASSWORD);
+        return ResponseEntity.ok("If the email is registered, you'll get a reset link");
+    }
 
+    @GetMapping("/resetPassword")
+    public ResponseEntity<String> validateToken(@RequestParam("token") String token) {
+        userService.validateToken(token);
+        return ResponseEntity.ok("Token is valid");
+    }
 
+    @PostMapping("/reset-password/confirm")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+        userService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok("Password updated");
+    }
 }

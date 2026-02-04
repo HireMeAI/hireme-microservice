@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -142,6 +143,7 @@ public class UserServiceImpl implements UserService {
         });
         tokenRepository.saveAll(validUserTokens);
     }
+
     @Override
     public void logoutAllDevices(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -158,67 +160,71 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void refreshToken(
-            HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-
+    @Transactional
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        final String refreshToken;
-        final String userEmail;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS, "Missing or invalid Authorization header");
         }
-        refreshToken = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(refreshToken);
 
-        if (userEmail != null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            boolean isTokenValid = tokenRepository.findByValue(refreshToken)
-                    .map(t -> !t.isExpired() && !t.isRevoked() && t.getTokenType() == TypeToken.REFRESH)
-                    .orElse(false);
-            if (jwtService.isTokenValid(refreshToken, userDetails) && isTokenValid) {
-                // 1. Revoke the entire current session (Access + Refresh)
-                String oldSessionId = jwtService.extractSessionId(refreshToken);
-                if (oldSessionId != null) {
-                    List<Token> oldTokens = tokenRepository.findBySessionId(oldSessionId);
-                    oldTokens.forEach(t -> {
-                        t.setExpired(true);
-                        t.setRevoked(true);
-                    });
-                    tokenRepository.saveAll(oldTokens);
-                } else {
-                    // Fallback for missing sid
-                    Token storedToken = tokenRepository.findByValue(refreshToken).orElseThrow();
-                    storedToken.setRevoked(true);
-                    storedToken.setExpired(true);
-                    tokenRepository.save(storedToken);
-                }
+        final String refreshToken = authHeader.substring(7);
+        final String userEmail = jwtService.extractUsername(refreshToken);
 
-                // 2. Generate new tokens
-                String sessionId = java.util.UUID.randomUUID().toString();
-                String accessToken = jwtService.generateToken(userDetails, sessionId);
-                String newRefreshToken = jwtService.generateRefreshToken(userDetails, sessionId);
-
-                // 3. Save new tokens
-                User user = userRepository.findByEmail(userEmail).orElseThrow();
-                saveUserToken(user, accessToken, TypeToken.ACCESS, sessionId);
-                saveUserToken(user, newRefreshToken, TypeToken.REFRESH, sessionId);
-
-                LoginResponseDto authResponse = LoginResponseDto.builder()
-                        .accessToken(accessToken)
-                        .refreshToken(newRefreshToken)
-                        .user(mapToDto(user))
-                        .build();
-
-                new ObjectMapper().writeValue(response.getOutputStream(), authResponse);
-
-            } else {
-                throw new ApiException(ErrorCode.INVALID_CREDENTIALS, "Invalid or expired refresh token");
-            }
-        } else {
+        if (userEmail == null) {
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS, "Invalid refresh token");
         }
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+        UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+        validateRefreshToken(refreshToken, userDetails);
+
+        revokeCurrentSession(refreshToken);
+
+        String newSessionId = java.util.UUID.randomUUID().toString();
+        String accessToken = jwtService.generateToken(userDetails, newSessionId);
+        String newRefreshToken = jwtService.generateRefreshToken(userDetails, newSessionId);
+
+        saveUserToken(user, accessToken, TypeToken.ACCESS, newSessionId);
+        saveUserToken(user, newRefreshToken, TypeToken.REFRESH, newSessionId);
+
+        LoginResponseDto authResponse = LoginResponseDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(newRefreshToken)
+                .user(mapToDto(user))
+                .build();
+
+        sendJsonResponse(response, authResponse);
+    }
+
+    private void validateRefreshToken(String token, UserDetails userDetails) {
+        boolean isTokenValidInDb = tokenRepository.findByValue(token)
+                .map(t -> !t.isExpired() && !t.isRevoked() && t.getTokenType() == TypeToken.REFRESH)
+                .orElse(false);
+
+        if (!isTokenValidInDb || !jwtService.isTokenValid(token, userDetails)) {
+            throw new ApiException(ErrorCode.INVALID_CREDENTIALS, "Invalid or expired refresh token");
+        }
+    }
+
+    private void revokeCurrentSession(String refreshToken) {
+        String oldSessionId = jwtService.extractSessionId(refreshToken);
+
+        if (oldSessionId != null) {
+            tokenRepository.revokeAllBySessionId(oldSessionId);
+        } else {
+            Token storedToken = tokenRepository.findByValue(refreshToken)
+                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Token not found"));
+            storedToken.setRevoked(true);
+            storedToken.setExpired(true);
+            tokenRepository.save(storedToken);
+        }
+    }
+
+    private void sendJsonResponse(HttpServletResponse response, Object data) throws IOException {
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        new ObjectMapper().writeValue(response.getOutputStream(), data);
     }
 
     @Override
@@ -267,24 +273,54 @@ public class UserServiceImpl implements UserService {
         user = userRepository.save(user);
 
         if(!TypeRole.ADMIN.equals(role)){
-            String emailVerificationToken = jwtService.generateEmailVerificationToken(user);
+            String emailVerificationToken = jwtService.generateActionToken(user);
             saveUserToken(user, emailVerificationToken, TypeToken.EMAIL_VERIFICATION);
-            confimationEmail(user, emailVerificationToken);
+            confirmationEmail(user, emailVerificationToken);
         }
         return mapToDto(user);
-
     }
 
-    public void confimationEmail(User newUser, String token){
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("confirmedUrl",baseUrl+ "/api/auth/confirm?token=" + token);
-        variables.put("username", newUser.getFirstName());
-        try {
-            emailService.sendVerificationEmail(newUser.getEmail(),"Vérifier l'adresse e-mail",variables);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+    public void confirmationEmail(User newUser, String token) {
+        sendEmail(
+                newUser,
+                token,
+                "/api/auth/confirm",
+                "Veuillez confirmer votre adresse e-mail",
+                "VerificationEmail"
+        );
+    }
 
+    public void resetPasswordEmail(User newUser, String token) {
+        sendEmail(
+                newUser,
+                token,
+                "/api/auth/resetPassword",
+                "Réinitialisation de votre mot de passe",
+                "ResetPassword"
+        );
+    }
+
+    private void sendEmail(User user, String token, String urlPath, String subject, String templateName) {
+        Map<String, Object> variables = new HashMap<>();
+
+        String fullUrl = baseUrl + urlPath + "?token=" + token;
+
+        variables.put("confirmedUrl", fullUrl);
+        variables.put("username", user.getFirstName());
+
+        try {
+            emailService.sendHtmlEmailWithTemplate(
+                    user.getEmail(),
+                    null,
+                    subject,
+                    templateName,
+                    variables
+            );
+        } catch (ApiException ex) {
+            throw ex;
+        } catch (Exception e) {
+            throw new IllegalStateException("Erreur lors de l'envoi de l'email : " + subject, e);
+        }
     }
 
     public UserResponseDto mapToDto(User user){
@@ -302,13 +338,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void confirmToken(String token){
 
-        Token confirmToken = tokenRepository
-                .findByValue(token)
-                .orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Token introuvable"));
-
-        if (confirmToken.getExpiresAt().before(new Date())) {
-            throw new ApiException(ErrorCode.TOKEN_EXPIRED, "Le token a expiré.");
-        }
+        Token confirmToken = this.validateToken(token);
         User user = confirmToken.getUser();
 
         if(user.getConfirmedAt() != null){
@@ -317,16 +347,24 @@ public class UserServiceImpl implements UserService {
 
         user.setConfirmedAt(LocalDateTime.now());
         confirmToken.setRevoked(true);
-
     }
 
     @Override
     @Transactional
-    public void resendVerificationEmail(ResendEmailRequest request) {
-        User user = userRepository.findByEmail(request.email()).orElse(null);
-        if (user == null || user.getConfirmedAt() != null) {
+    public void processRequest(String email, TypeToken typeToken) {
+        handleTokenRequest(email, typeToken);
+    }
+
+    private void handleTokenRequest(String email, TypeToken type) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
             return;
         }
+        if (type == TypeToken.EMAIL_VERIFICATION && user.getConfirmedAt() != null) {
+            return;
+        }
+
         LocalDateTime now = LocalDateTime.now();
         if (user.getLastEmailSentAt() != null &&
                 user.getLastEmailSentAt().plusMinutes(2).isAfter(now)) {
@@ -335,11 +373,40 @@ public class UserServiceImpl implements UserService {
         }
         user.setLastEmailSentAt(now);
 
-        tokenRepository.revokeAllUserTokensByType(user.getId(), TypeToken.EMAIL_VERIFICATION);
+        tokenRepository.revokeAllUserTokensByType(user.getId(), type);
+        String token = jwtService.generateActionToken(user);
+        saveUserToken(user, token, type);
 
-        String emailVerificationToken = jwtService.generateEmailVerificationToken(user);
-        saveUserToken(user, emailVerificationToken, TypeToken.EMAIL_VERIFICATION);
-        confimationEmail(user, emailVerificationToken);
+        switch (type) {
+            case EMAIL_VERIFICATION:
+                confirmationEmail(user, token);
+                break;
+            case RESET_PASSWORD:
+                resetPasswordEmail(user, token);
+                break;
+            default:
+                throw new IllegalArgumentException("Type de token non géré pour l'envoi d'email");
+        }
     }
 
+    @Override
+    public Token validateToken(String token){
+        Token resetToken = tokenRepository
+                .findByValue(token)
+                .orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Token introuvable"));
+
+        if (resetToken.getExpiresAt().before(new Date())) {
+            throw new ApiException(ErrorCode.TOKEN_EXPIRED, "Le token a expiré.");
+        }
+        return resetToken;
+    }
+
+    @Transactional
+    @Override
+    public void resetPassword(String token, String newPassword){
+        Token resetToken = this.validateToken(token);
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        resetToken.setRevoked(true);
+    }
 }

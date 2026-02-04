@@ -63,26 +63,4 @@ public class EmailService {
             throw new ApiException(ErrorCode.EMAIL_TEMPLATE_NOT_FOUND, "Template not found: " + templateName);
         }
     }
-
-    public void sendVerificationEmail(String to, String subject, Map<String, Object> variables) throws Exception {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true, ENCODING);
-
-        try {
-            Context context = new Context();
-            context.setVariables(variables);
-
-            String htmlContent = templateEngine.process("email/" + "VerificationEmail", context);
-
-            helper.setTo(to);
-
-            helper.setSubject(subject);
-            helper.setText(htmlContent, true);
-            helper.setFrom(fromAddress, fromName);
-
-            mailSender.send(message);
-        } catch (TemplateInputException e) {
-            throw new ApiException(ErrorCode.EMAIL_TEMPLATE_NOT_FOUND, "Template not found: VerificationEmail");
-        }
-    }
 }

@@ -4,5 +4,6 @@ public enum TypeToken {
     BEARER,
     REFRESH,
     ACCESS,
+    RESET_PASSWORD,
     EMAIL_VERIFICATION;
 }
