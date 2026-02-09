@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: hireme_auth
+      POSTGRES_USER: hireme
+      POSTGRES_PASSWORD: hireme_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U hireme -d hireme_auth" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mail-server:
+    image: axllent/mailpit
+    container_name: auth-mail
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+
+  auth-service:
+    build: .
+    container_name: auth-service
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_PORT=8080
+      - APP_BASE_URL=http://localhost:8080
+      - PG_URL=jdbc:postgresql://db:5432/hireme_auth
+      - PG_USERNAME=hireme
+      - PG_PASSWORD=hireme_password
+      - MAIL_HOST=mail-server
+      - MAIL_PORT=1025
+      - MAIL_USERNAME=test@hireme.com
+      - MAIL_PASSWORD=test
+      - JWT_SECRET=7a45678901234567890123456789012345678901234567890123456789012345
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+volumes:
+  postgres_data:
