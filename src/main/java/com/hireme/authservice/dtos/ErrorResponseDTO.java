@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class ErrorResponseDTO {
 
     LocalDateTime dateTime;
+    String internalCode;
     int status;
     String error;
     String description;

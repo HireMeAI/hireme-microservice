@@ -294,7 +294,7 @@ public class UserServiceImpl implements UserService {
         sendEmail(
                 newUser,
                 token,
-                "/api/auth/resetPassword",
+                "/api/auth/reset-password",
                 "Réinitialisation de votre mot de passe",
                 "ResetPassword"
         );

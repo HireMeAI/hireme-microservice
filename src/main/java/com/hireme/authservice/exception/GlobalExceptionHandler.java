@@ -18,6 +18,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> apiExceptionHandler(ApiException ex, HttpServletRequest request){
         ErrorResponseDTO errorResponseDTO = new ErrorResponseDTO(
                 LocalDateTime.now(),
+                ex.getErrorCode().getCode(),
                 ex.getErrorCode().getStatus().value(),
                 ex.getErrorCode().getStatus().getReasonPhrase(),
                 ex.getErrorCode().getMessage(),
@@ -41,6 +42,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleException(Exception ex, HttpServletRequest request) {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 LocalDateTime.now(),
+                null,
                 500,
                 "Internal Server Error",
                 ex.getMessage(),

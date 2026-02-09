@@ -73,7 +73,8 @@ public class AuthController {
             description = "Authenticates a user and returns access and refresh tokens",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Login successful"),
-                    @ApiResponse(responseCode = "401", description = "Invalid credentials")
+                    @ApiResponse(responseCode = "401", description = "Invalid credentials"),
+                    @ApiResponse(responseCode = "401", description = "Invalid credentials (email or password)")
             }
     )
     @PostMapping("/login")
@@ -128,30 +129,74 @@ public class AuthController {
         userService.logout(authHeader);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(
+            summary = "Confirm email address",
+            description = "Validates the email verification token sent to the user upon registration.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Email successfully confirmed"),
+                    @ApiResponse(responseCode = "400", description = "Invalid or malformed token"),
+                    @ApiResponse(responseCode = "404", description = "Token not found or expired")
+            }
+    )
     @GetMapping("/confirm")
     public ResponseEntity<String> confirmEmail(@RequestParam("token") String token){
         userService.confirmToken(token);
         return ResponseEntity.ok("email confirmer");
     }
 
+    @Operation(
+            summary = "Resend verification email",
+            description = "Triggers a new verification email for a specific account if it is not yet verified.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Request processed (Email sent if user exists and is unverified)"),
+                    @ApiResponse(responseCode = "400", description = "Invalid email format")
+            }
+    )
     @PostMapping("/resend-verification-email")
     public ResponseEntity<Void> resendVerificationEmail(@RequestBody @Valid ResendEmailRequest request){
         userService.processRequest(request.email(), TypeToken.EMAIL_VERIFICATION);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(
+            summary = "Request password reset",
+            description = "Initiates the password reset flow. Sends an email with a reset link if the email exists.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Request processed. Security note: Always returns 200 even if email doesn't exist to prevent enumeration."),
+                    @ApiResponse(responseCode = "400", description = "Invalid email format")
+            }
+    )
     @PostMapping("/reset-password-email")
     public ResponseEntity<String> resetPasswordEmail(@RequestBody @Valid ResetRequest request){
         userService.processRequest(request.email(), TypeToken.RESET_PASSWORD);
         return ResponseEntity.ok("If the email is registered, you'll get a reset link");
     }
 
-    @GetMapping("/resetPassword")
+    @Operation(
+            summary = "Validate reset token",
+            description = "Checks if a password reset token is valid and not expired before showing the password change form.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Token is valid"),
+                    @ApiResponse(responseCode = "401", description = "Invalid or malformed token"),
+                    @ApiResponse(responseCode = "404", description = "Token not found or expired")
+            }
+    )
+    @GetMapping("/reset-password")
     public ResponseEntity<String> validateToken(@RequestParam("token") String token) {
         userService.validateToken(token);
         return ResponseEntity.ok("Token is valid");
     }
 
+    @Operation(
+            summary = "Set new password",
+            description = "Updates the user's password using a valid reset token.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Password successfully updated"),
+                    @ApiResponse(responseCode = "401", description = "Invalid token or weak password"),
+                    @ApiResponse(responseCode = "404", description = "Token not found")
+            }
+    )
     @PostMapping("/reset-password/confirm")
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
         userService.resetPassword(request.token(), request.newPassword());
