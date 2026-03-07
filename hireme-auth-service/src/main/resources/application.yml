@@ -5,6 +5,15 @@ app:
         address: ${MAIL_USERNAME}
         name: HireMe App
 
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/eureka/}
+
 spring:
   application:
     name: AuthService
