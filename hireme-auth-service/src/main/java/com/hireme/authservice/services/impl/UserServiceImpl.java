@@ -1,5 +1,7 @@
 package com.hireme.authservice.services.impl;
 
+import com.hireme.authservice.domain.entities.Candidate;
+import com.hireme.authservice.domain.entities.Recruiter;
 import com.hireme.authservice.domain.entities.Token;
 import com.hireme.authservice.domain.entities.User;
 import com.hireme.authservice.domain.enums.TypeRole;
@@ -263,13 +265,38 @@ public class UserServiceImpl implements UserService {
                     "Email "+ dto.getEmail() + " is already registered");
         }
 
-        User user = User.builder()
-                .email(dto.getEmail())
-                .password(passwordEncoder.encode(dto.getPassword()))
-                .firstName(dto.getFirstName())
-                .lastName(dto.getLastName())
-                .role(role)
-                .build();
+        User user ;
+        switch (role) {
+            case CANDIDATE -> {
+                user = Candidate.builder() // Utilise le builder du CANDIDAT
+                        .firstName(dto.getFirstName())
+                        .lastName(dto.getLastName())
+                        .email(dto.getEmail())
+                        .password(passwordEncoder.encode(dto.getPassword()))
+                        .role(role)
+                        .autoApplyEnabled(false)
+                        .build();
+            }
+            case RECRUITER -> {
+                user = Recruiter.builder()
+                        .firstName(dto.getFirstName())
+                        .lastName(dto.getLastName())
+                        .email(dto.getEmail())
+                        .password(passwordEncoder.encode(dto.getPassword()))
+                        .role(role)
+                        .build();
+            }
+            case ADMIN -> {
+                user = User.builder()
+                        .firstName(dto.getFirstName())
+                        .lastName(dto.getLastName())
+                        .email(dto.getEmail())
+                        .password(passwordEncoder.encode(dto.getPassword()))
+                        .role(role)
+                        .build();
+            }
+            default -> throw new ApiException(ErrorCode.INVALID_ROLE, "Role not supported");
+        }
         user = userRepository.save(user);
 
         if(!TypeRole.ADMIN.equals(role)){
