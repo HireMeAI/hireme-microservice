@@ -1,4 +1,4 @@
-package com.hireme.authservice.configs;
+package com.hireme.authservice.configs.security;
 
 import com.hireme.authservice.repositories.TokenRepository;
 import com.hireme.authservice.services.JwtService;

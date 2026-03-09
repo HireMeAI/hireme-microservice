@@ -1,5 +1,6 @@
 package com.hireme.authservice.services;
 
+import com.hireme.authservice.configs.security.UserPrincipal;
 import com.hireme.authservice.domain.entities.User;
 import com.hireme.authservice.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "User not found with identifier: " + identifier));
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+        return new UserPrincipal(user);
 
     }
 }

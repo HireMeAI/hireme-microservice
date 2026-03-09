@@ -23,7 +23,6 @@ public class AuthController {
 
     private final UserService userService;
 
-
     @PostMapping("/sign-in")
     @Operation(
             summary = "Register a candidate",
@@ -81,53 +80,6 @@ public class AuthController {
         return ResponseEntity.ok().body(userService.loginUser(request));
     }
 
-    @Operation(
-            summary = "Refresh access token",
-            description = "Generates a new access token using a valid refresh token",
-            security = { @SecurityRequirement(name = "bearerAuth") },
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Token successfully refreshed"),
-                    @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
-            }
-    )
-    @PostMapping("/refresh-token")
-    public void refreshToken(
-            HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        userService.refreshToken(request, response);
-    }
-
-    @PostMapping("/logout-all")
-    @Operation(
-            summary = "Logout from all devices",
-            description = "Revokes all active tokens for the authenticated user",
-            security = { @SecurityRequirement(name = "bearerAuth") },
-            responses = {
-                    @ApiResponse(responseCode = "204", description = "Successfully logged out from all devices"),
-                    @ApiResponse(responseCode = "401", description = "Unauthorized")
-            }
-    )
-    public ResponseEntity<Void> logoutAllDevices(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        userService.logoutAllDevices(authHeader);
-        return ResponseEntity.noContent().build();
-    }
-
-    @Operation(
-            summary = "Logout current session",
-            description = "Revokes the current access token",
-            security = { @SecurityRequirement(name = "bearerAuth") },
-            responses = {
-                    @ApiResponse(responseCode = "204", description = "Successfully logged out"),
-                    @ApiResponse(responseCode = "401", description = "Unauthorized")
-            }
-    )
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        userService.logout(authHeader);
-        return ResponseEntity.noContent().build();
-    }
     @GetMapping("/confirm")
     public ResponseEntity<String> confirmEmail(@RequestParam("token") String token){
         userService.confirmToken(token);

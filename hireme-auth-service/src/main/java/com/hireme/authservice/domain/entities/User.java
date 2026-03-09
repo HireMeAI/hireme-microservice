@@ -36,6 +36,9 @@ public class User  extends Auditable {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Transient
     private String fullName;
 
