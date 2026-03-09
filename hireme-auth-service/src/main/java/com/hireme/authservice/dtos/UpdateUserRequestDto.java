@@ -1,23 +1,16 @@
 package com.hireme.authservice.dtos;
 
+
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserResponseDto {
+public class UpdateUserRequestDto {
 
-    private UUID id;
     private String lastName;
     private String firstName;
-    private String fullName;
-    private String email;
-    private Instant createdAt;
-
 }

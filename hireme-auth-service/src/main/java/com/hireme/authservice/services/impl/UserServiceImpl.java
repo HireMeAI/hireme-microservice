@@ -1,5 +1,7 @@
 package com.hireme.authservice.services.impl;
 
+import com.hireme.authservice.domain.entities.Candidate;
+import com.hireme.authservice.domain.entities.Recruiter;
 import com.hireme.authservice.domain.entities.Token;
 import com.hireme.authservice.domain.entities.User;
 import com.hireme.authservice.domain.enums.TypeRole;
@@ -7,6 +9,7 @@ import com.hireme.authservice.domain.enums.TypeToken;
 import com.hireme.authservice.dtos.*;
 import com.hireme.authservice.exception.ApiException;
 import com.hireme.authservice.exception.ErrorCode;
+import com.hireme.authservice.mappers.UserMapper;
 import com.hireme.authservice.repositories.TokenRepository;
 import com.hireme.authservice.repositories.UserRepository;
 import com.hireme.authservice.services.CustomUserDetailsService;
@@ -47,6 +50,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final TokenRepository tokenRepository;
     private final EmailService emailService;
+    private final UserMapper mapper;
     @Value("${app.base-url}")
     private String baseUrl;
 
@@ -97,7 +101,7 @@ public class UserServiceImpl implements UserService {
             saveUserToken(user, jwtToken, TypeToken.ACCESS, sessionId);
             saveUserToken(user, refreshToken, TypeToken.REFRESH, sessionId);
 
-            UserResponseDto userResponseDto = mapToDto(user);
+            UserResponseDto userResponseDto = mapper.toUserDto(user);
             return LoginResponseDto.builder()
                     .user(userResponseDto)
                     .accessToken(jwtToken)
@@ -192,7 +196,7 @@ public class UserServiceImpl implements UserService {
         LoginResponseDto authResponse = LoginResponseDto.builder()
                 .accessToken(accessToken)
                 .refreshToken(newRefreshToken)
-                .user(mapToDto(user))
+                .user(mapper.toUserDto(user))
                 .build();
 
         sendJsonResponse(response, authResponse);
@@ -263,13 +267,27 @@ public class UserServiceImpl implements UserService {
                     "Email "+ dto.getEmail() + " is already registered");
         }
 
-        User user = User.builder()
-                .email(dto.getEmail())
-                .password(passwordEncoder.encode(dto.getPassword()))
+        String encodedPassword = passwordEncoder.encode(dto.getPassword());
+
+        User.UserBuilder<?, ?> builder;
+
+        switch (role) {
+            case CANDIDATE -> builder = Candidate.builder()
+                        .autoApplyEnabled(false);
+            case RECRUITER -> builder = Recruiter.builder();
+
+            case ADMIN -> builder = User.builder();
+            default -> throw new ApiException(ErrorCode.INVALID_ROLE, "Role not supported");
+        }
+
+        User user = builder
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
+                .email(dto.getEmail())
+                .password(encodedPassword)
                 .role(role)
                 .build();
+
         user = userRepository.save(user);
 
         if(!TypeRole.ADMIN.equals(role)){
@@ -277,7 +295,7 @@ public class UserServiceImpl implements UserService {
             saveUserToken(user, emailVerificationToken, TypeToken.EMAIL_VERIFICATION);
             confirmationEmail(user, emailVerificationToken);
         }
-        return mapToDto(user);
+        return mapper.toUserDto(user);
     }
 
     public void confirmationEmail(User newUser, String token) {
@@ -321,17 +339,6 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             throw new IllegalStateException("Erreur lors de l'envoi de l'email : " + subject, e);
         }
-    }
-
-    public UserResponseDto mapToDto(User user){
-        return UserResponseDto.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .firstName(user.getFirstName())
-                .lastName(user.getLastName())
-                .fullName(user.getFullName())
-                .createdAt(user.getCreatedAt())
-                .build();
     }
 
     @Transactional

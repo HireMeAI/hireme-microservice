@@ -78,3 +78,8 @@ springdoc:
     display-request-duration: true
     default-models-expand-depth: 2
     default-model-expand-depth: 2
+logging:
+    level:
+        root: INFO
+        org.springframework: INFO
+        com.example: DEBUG

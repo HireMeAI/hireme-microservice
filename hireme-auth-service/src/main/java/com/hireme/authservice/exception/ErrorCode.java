@@ -14,7 +14,8 @@ public enum ErrorCode {
     EMAIL_TEMPLATE_NOT_FOUND("Email template not found", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_CREDENTIALS("Invalid credentials", HttpStatus.UNAUTHORIZED),
     TOKEN_EXPIRED("Token has expired", HttpStatus.UNAUTHORIZED),
-    TOO_MANY_REQUESTS("Too many requests", HttpStatus.TOO_MANY_REQUESTS);
+    TOO_MANY_REQUESTS("Too many requests", HttpStatus.TOO_MANY_REQUESTS),
+    INVALID_ROLE("Invalid role specified", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus status;
