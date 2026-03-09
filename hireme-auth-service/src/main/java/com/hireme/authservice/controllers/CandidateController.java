@@ -42,7 +42,6 @@ public class CandidateController {
     })
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getCurrentCandidate(@CurrentUser UserPrincipal principal) {
-        System.out.println("fuck you");
         if (principal == null) {
             throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "user is null");
         }
