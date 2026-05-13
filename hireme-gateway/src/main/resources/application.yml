@@ -5,23 +5,21 @@ spring:
     import: optional:file:.env[.properties]
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: false
-      routes:
-        - id: auth-service
-          uri: lb://AuthService
-          predicates:
-            - Path=/auth/**
-          filters:
-            - StripPrefix=1
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          routes:
+            - id: auth-service
+              uri: http://auth-service:8081
+              predicates:
+                - Path=/api/auth/**
 
-        - id: resume-service
-          uri: lb://ResumeService
-          predicates:
-            - Path=/resume/**
-          filters:
-            - StripPrefix=1
+            - id: resume-service
+              uri: http://resume-service:8082
+              predicates:
+                - Path=/api/resumes/**, /api/contacts/**, /api/educations/**, /api/experiences/**, /api/skills/**, /api/languages/**, /api/templates/**
 
 server:
   port: ${GATEWAY_PORT:-8080}

@@ -23,7 +23,7 @@ public class AuthController {
 
     private final UserService userService;
 
-    @PostMapping("/sign-in")
+    @PostMapping("/register")
     @Operation(
             summary = "Register a candidate",
             description = "Creates a new candidate account",
@@ -34,7 +34,7 @@ public class AuthController {
 
             }
     )
-    public ResponseEntity<UserResponseDto> signInCandidate(@Valid @RequestBody UserRegisterDto userRegisterDto) {
+    public ResponseEntity<UserResponseDto> registerCandidate(@Valid @RequestBody UserRegisterDto userRegisterDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.registerCandidate(userRegisterDto));
     }
 
@@ -48,8 +48,8 @@ public class AuthController {
 
             }
     )
-    @PostMapping("/recruiter/sign-in")
-    public ResponseEntity<UserResponseDto> signInRecruiter(@Valid @RequestBody UserRegisterDto userRegisterDto) {
+    @PostMapping("/recruiter/register")
+    public ResponseEntity<UserResponseDto> registerRecruiter(@Valid @RequestBody UserRegisterDto userRegisterDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.registerRecruiter(userRegisterDto));
     }
 
@@ -63,8 +63,8 @@ public class AuthController {
 
             }
     )
-    @PostMapping("/admin/sign-in")
-    public ResponseEntity<UserResponseDto> signInAdmin(@Valid @RequestBody UserRegisterDto userRegisterDto) {
+    @PostMapping("/admin/register")
+    public ResponseEntity<UserResponseDto> registerAdmin(@Valid @RequestBody UserRegisterDto userRegisterDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.registerAdmin(userRegisterDto));
     }
     @Operation(
