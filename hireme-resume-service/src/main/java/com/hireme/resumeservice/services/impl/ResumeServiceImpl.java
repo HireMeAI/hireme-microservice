@@ -35,6 +35,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final LanguageRepository languageRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<ResumeResponse> findAll(UUID userId) {
         List<Resume> resumes = (userId != null)
                 ? resumeRepository.findByUserId(userId)
@@ -43,6 +44,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResumeResponse findById(UUID id) {
         Resume resume = resumeRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESUME_NOT_FOUND, "Resume with id " + id + " not found"));
@@ -50,6 +52,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResumeResponse findBySlug(String slug) {
         Resume resume = resumeRepository.findByPortfolioSlug(slug)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESUME_NOT_FOUND, "Resume with slug '" + slug + "' not found"));
@@ -215,6 +218,18 @@ public class ResumeServiceImpl implements ResumeService {
                         .map(l -> new com.hireme.resumeservice.dtos.language.LanguageResponse(
                                 l.getId(), l.getTitle(), l.getCreatedAt(), l.getUpdatedAt()))
                         .collect(Collectors.toSet()) : new HashSet<>(),
+                resume.getExperiences() != null ? resume.getExperiences().stream()
+                        .map(e -> new com.hireme.resumeservice.dtos.experience.ExperienceResponse(
+                                e.getId(), e.getResume().getId(), e.getPosition(), e.getCompany(),
+                                e.getDescription(), e.getStartDate(), e.getEndDate(),
+                                e.getCreatedAt(), e.getUpdatedAt()))
+                        .collect(Collectors.toList()) : new java.util.ArrayList<>(),
+                resume.getEducations() != null ? resume.getEducations().stream()
+                        .map(ed -> new com.hireme.resumeservice.dtos.education.EducationResponse(
+                                ed.getCode(), ed.getResume().getId(), ed.getDegree(), ed.getInstitution(),
+                                ed.getStartDate(), ed.getDescription(), ed.getEndDate(),
+                                ed.getCreatedAt(), ed.getUpdatedAt()))
+                        .collect(Collectors.toList()) : new java.util.ArrayList<>(),
                 resume.getCreatedAt(),
                 resume.getUpdatedAt()
         );
