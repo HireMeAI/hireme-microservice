@@ -1,9 +1,10 @@
 app:
   base-url: ${APP_BASE_URL:http://localhost:${APP_PORT:8080}}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
   mail:
     from:
-        address: ${MAIL_USERNAME}
-        name: HireMe App
+      address: ${MAIL_USERNAME}
+      name: HireMe App
 
 eureka:
   instance:
@@ -28,7 +29,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
 
   jwt:
     secret: ${JWT_SECRET:7a45678901234567890123456789012345678901234567890123456789012345}
@@ -57,14 +58,14 @@ server:
   port: ${APP_PORT}
   servlet:
     context-path: /api
-    
+
 # Swagger/OpenAPI Configuration
 springdoc:
   show-actuator: false
   api-docs:
     path: /v3/api-docs
     enabled: true
-  
+
   # Swagger UI Configuration
   swagger-ui:
     path: /swagger-ui.html
@@ -79,7 +80,7 @@ springdoc:
     default-models-expand-depth: 2
     default-model-expand-depth: 2
 logging:
-    level:
-        root: INFO
-        org.springframework: INFO
-        com.example: DEBUG
+  level:
+    root: INFO
+    org.springframework: INFO
+    com.example: DEBUG

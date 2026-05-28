@@ -10,6 +10,7 @@ import com.hireme.authservice.dtos.UserResponseDto;
 import com.hireme.authservice.exception.ApiException;
 import com.hireme.authservice.exception.ErrorCode;
 import com.hireme.authservice.mappers.UserMapper;
+import com.hireme.authservice.repositories.UserRepository;
 import com.hireme.authservice.services.CandidateService;
 import com.hireme.authservice.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ public class CandidateController {
     private final UserService userService;
     private final CandidateService candidateService;
     private final UserMapper mapper;
+    private final UserRepository userRepository;
 
     @Operation(
             summary = "Récupérer le profil actuel",
@@ -45,7 +47,8 @@ public class CandidateController {
         if (principal == null) {
             throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "user is null");
         }
-        User currentUser = principal.getUser();
+        User currentUser = userRepository.findByEmail(principal.getUsername())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "User not found with email: " + principal.getUsername()));
         return ResponseEntity.ok().body(mapper.mapToDto(currentUser));
     }
 

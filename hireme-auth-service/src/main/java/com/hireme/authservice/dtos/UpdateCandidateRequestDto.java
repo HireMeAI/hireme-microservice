@@ -17,7 +17,7 @@ public class UpdateCandidateRequestDto extends UpdateUserRequestDto {
     private String bio;
     private AvailabilityStatus availability;
     private Set<ContractType> contractPreferences;
-    private boolean autoApplyEnabled;
+    private Boolean autoApplyEnabled;
     private String desiredJobTitle;
-    private boolean openToRelocate;
+    private Boolean openToRelocate;
 }

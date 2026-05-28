@@ -23,6 +23,9 @@ public class AuthController {
 
     private final UserService userService;
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend-url}")
+    private String frontendUrl;
+
     @PostMapping("/register")
     @Operation(
             summary = "Register a candidate",
@@ -81,9 +84,18 @@ public class AuthController {
     }
 
     @GetMapping("/confirm")
-    public ResponseEntity<String> confirmEmail(@RequestParam("token") String token){
-        userService.confirmToken(token);
-        return ResponseEntity.ok("email confirmer");
+    public ResponseEntity<Void> confirmEmail(@RequestParam("token") String token){
+        try {
+            userService.confirmToken(token);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(java.net.URI.create(frontendUrl + "/?emailConfirmed=true"))
+                    .build();
+        } catch (Exception e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(java.net.URI.create(frontendUrl + "/?emailConfirmed=false&error=" + java.net.URLEncoder.encode(errorMsg, java.nio.charset.StandardCharsets.UTF_8)))
+                    .build();
+        }
     }
 
     @PostMapping("/resend-verification-email")
@@ -99,9 +111,18 @@ public class AuthController {
     }
 
     @GetMapping("/resetPassword")
-    public ResponseEntity<String> validateToken(@RequestParam("token") String token) {
-        userService.validateToken(token);
-        return ResponseEntity.ok("Token is valid");
+    public ResponseEntity<Void> validateToken(@RequestParam("token") String token) {
+        try {
+            userService.validateToken(token);
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(java.net.URI.create(frontendUrl + "/?resetToken=" + java.net.URLEncoder.encode(token, java.nio.charset.StandardCharsets.UTF_8)))
+                    .build();
+        } catch (Exception e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Invalid or expired token";
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(java.net.URI.create(frontendUrl + "/?resetTokenError=" + java.net.URLEncoder.encode(errorMsg, java.nio.charset.StandardCharsets.UTF_8)))
+                    .build();
+        }
     }
 
     @PostMapping("/reset-password/confirm")
