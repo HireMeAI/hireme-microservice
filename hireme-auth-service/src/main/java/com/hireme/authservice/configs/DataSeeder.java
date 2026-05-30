@@ -40,17 +40,19 @@ public class DataSeeder {
             log.info("Seeding database...");
 
             seedAdmin();
-            seedCandidates();
-            seedRecruiters();
+            seedCandidate();
+            seedRecruiter();
 
             log.info("Database seeded successfully.");
-            log.info("=== Comptes de test ===");
-            log.info("ADMIN      : admin@hireme.com / Admin1234!");
-            log.info("CANDIDAT 1 : alice.martin@example.com / Password123!");
-            log.info("CANDIDAT 2 : bob.dupont@example.com / Password123!");
-            log.info("RECRUTEUR 1: sophie.legrand@techcorp.com / Password123!");
-            log.info("RECRUTEUR 2: marc.bernard@startup.io / Password123!");
-            log.info("=======================");
+            log.info("╔══════════════════════════════════════════════════════╗");
+            log.info("║              COMPTES DE TEST DISPONIBLES             ║");
+            log.info("╠══════════════╦═══════════════════════════╦═══════════╣");
+            log.info("║ RÔLE         ║ EMAIL                     ║ MOT PASSE ║");
+            log.info("╠══════════════╬═══════════════════════════╬═══════════╣");
+            log.info("║ ADMIN        ║ admin@hireme.com          ║ Admin1!   ║");
+            log.info("║ CANDIDAT     ║ candidate@hireme.com      ║ Cand1!    ║");
+            log.info("║ RECRUTEUR    ║ recruiter@hireme.com      ║ Rec1!     ║");
+            log.info("╚══════════════╩═══════════════════════════╩═══════════╝");
         };
     }
 
@@ -59,7 +61,7 @@ public class DataSeeder {
                 .firstName("Super")
                 .lastName("Admin")
                 .email("admin@hireme.com")
-                .password(passwordEncoder.encode("Admin1234!"))
+                .password(passwordEncoder.encode("Admin1!"))
                 .role(TypeRole.ADMIN)
                 .confirmedAt(LocalDateTime.now())
                 .build();
@@ -67,12 +69,12 @@ public class DataSeeder {
         userRepository.save(admin);
     }
 
-    private void seedCandidates() {
-        Candidate alice = Candidate.builder()
+    private void seedCandidate() {
+        Candidate candidate = Candidate.builder()
                 .firstName("Alice")
                 .lastName("Martin")
-                .email("alice.martin@example.com")
-                .password(passwordEncoder.encode("Password123!"))
+                .email("candidate@hireme.com")
+                .password(passwordEncoder.encode("Cand1!"))
                 .role(TypeRole.CANDIDATE)
                 .confirmedAt(LocalDateTime.now())
                 .bio("Développeuse full-stack passionnée par le web et l'IA.")
@@ -83,49 +85,21 @@ public class DataSeeder {
                 .openToRelocate(true)
                 .build();
 
-        Candidate bob = Candidate.builder()
-                .firstName("Bob")
-                .lastName("Dupont")
-                .email("bob.dupont@example.com")
-                .password(passwordEncoder.encode("Password123!"))
-                .role(TypeRole.CANDIDATE)
-                .confirmedAt(LocalDateTime.now())
-                .bio("Ingénieur backend Java/Spring, 5 ans d'expérience.")
-                .availability(AvailabilityStatus.OPEN_TO_TALK)
-                .contractPreferences(Set.of(ContractType.FULL_TIME, ContractType.FIXED_TERM))
-                .desiredJobTitle("Ingénieur Backend")
-                .autoApplyEnabled(true)
-                .openToRelocate(false)
-                .build();
-
-        candidateRepository.save(alice);
-        candidateRepository.save(bob);
+        candidateRepository.save(candidate);
     }
 
-    private void seedRecruiters() {
-        Recruiter sophie = Recruiter.builder()
+    private void seedRecruiter() {
+        Recruiter recruiter = Recruiter.builder()
                 .firstName("Sophie")
                 .lastName("Legrand")
-                .email("sophie.legrand@techcorp.com")
-                .password(passwordEncoder.encode("Password123!"))
+                .email("recruiter@hireme.com")
+                .password(passwordEncoder.encode("Rec1!"))
                 .role(TypeRole.RECRUITER)
                 .confirmedAt(LocalDateTime.now())
                 .actualPosition("Responsable RH")
                 .phoneNumber(612345678)
                 .build();
 
-        Recruiter marc = Recruiter.builder()
-                .firstName("Marc")
-                .lastName("Bernard")
-                .email("marc.bernard@startup.io")
-                .password(passwordEncoder.encode("Password123!"))
-                .role(TypeRole.RECRUITER)
-                .confirmedAt(LocalDateTime.now())
-                .actualPosition("CTO & Co-fondateur")
-                .phoneNumber(698765432)
-                .build();
-
-        recruiterRepository.save(sophie);
-        recruiterRepository.save(marc);
+        recruiterRepository.save(recruiter);
     }
 }

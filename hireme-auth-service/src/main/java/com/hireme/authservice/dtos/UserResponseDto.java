@@ -1,9 +1,9 @@
 package com.hireme.authservice.dtos;
 
+import com.hireme.authservice.domain.enums.TypeRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,6 +18,7 @@ public class UserResponseDto {
     private String firstName;
     private String fullName;
     private String email;
+    private TypeRole role;
     private Instant createdAt;
 
 }
