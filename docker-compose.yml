@@ -99,6 +99,41 @@ services:
         condition: service_healthy
     restart: always
 
+  job-db:
+    image: postgres:17-alpine
+    container_name: job-db
+    environment:
+      POSTGRES_DB: ${JOB_POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - job_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${JOB_POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  job-service:
+    build: ./hireme-job-service
+    container_name: job-service
+    ports:
+      - "${JOB_SERVICE_PORT:-8083}:${JOB_SERVICE_PORT:-8083}"
+    environment:
+      - APP_PORT=${JOB_SERVICE_PORT:-8083}
+      - PG_URL=jdbc:postgresql://job-db:5432/${JOB_POSTGRES_DB}
+      - PG_USERNAME=${POSTGRES_USER}
+      - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - EUREKA_SERVER_URL=http://eureka-server:${EUREKA_SERVER_PORT:-8761}/eureka/eureka/
+    depends_on:
+      job-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: always
+
   gateway:
     build: ./hireme-gateway
     container_name: gateway
@@ -115,3 +150,4 @@ services:
 volumes:
   postgres_data:
   resume_postgres_data:
+  job_postgres_data:

@@ -18,6 +18,8 @@ public class HiremeGatewayApplication {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
+                .route("job-service", r -> r.path("/api/jobs/**")
+                        .uri("lb://JobService"))
                 .route("auth-service", r -> r.path("/api/auth/**")
                         .uri("lb://AuthService"))
                 .route("candidate-service", r -> r.path("/api/candidate/**")
