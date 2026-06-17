@@ -97,4 +97,15 @@ class MatchingServiceImplTest {
         assertEquals(3L, matchingService.forgetCandidate(candidateId));
         verify(applicationRepository).deleteByCandidateId(candidateId);
     }
+
+    @Test
+    @DisplayName("RESUME_UPDATED identifie les candidatures à recalculer pour le CV")
+    void onResumeUpdated_returnsImpactedCount() {
+        UUID resumeId = UUID.randomUUID();
+        when(applicationRepository.findByResumeIdOrderByMatchScoreDesc(resumeId))
+                .thenReturn(List.of(new Application(), new Application()));
+
+        assertEquals(2, matchingService.onResumeUpdated(resumeId, "java spring", List.of()));
+        verify(applicationRepository).findByResumeIdOrderByMatchScoreDesc(resumeId);
+    }
 }

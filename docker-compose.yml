@@ -119,11 +119,14 @@ services:
       - PG_URL=jdbc:postgresql://resume-db:5432/${RESUME_POSTGRES_DB}
       - PG_USERNAME=${POSTGRES_USER}
       - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_SERVER_URL=http://eureka-server:${EUREKA_SERVER_PORT:-8761}/eureka/eureka/
     depends_on:
       resume-db:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     restart: always
 
@@ -154,11 +157,14 @@ services:
       - PG_URL=jdbc:postgresql://job-db:5432/${JOB_POSTGRES_DB}
       - PG_USERNAME=${POSTGRES_USER}
       - PG_PASSWORD=${POSTGRES_PASSWORD}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_SERVER_URL=http://eureka-server:${EUREKA_SERVER_PORT:-8761}/eureka/eureka/
     depends_on:
       job-db:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     restart: always
 
