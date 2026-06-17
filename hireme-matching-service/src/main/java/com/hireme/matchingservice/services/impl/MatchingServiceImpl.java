@@ -46,4 +46,10 @@ public class MatchingServiceImpl implements MatchingService {
     public List<Application> getByResume(UUID resumeId) {
         return applicationRepository.findByResumeIdOrderByMatchScoreDesc(resumeId);
     }
+
+    @Override
+    @Transactional
+    public long forgetCandidate(UUID candidateId) {
+        return applicationRepository.deleteByCandidateId(candidateId);
+    }
 }

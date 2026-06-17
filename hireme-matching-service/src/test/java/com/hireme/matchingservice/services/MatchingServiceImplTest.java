@@ -87,4 +87,14 @@ class MatchingServiceImplTest {
         assertEquals(2, matchingService.getByResume(resumeId).size());
         verify(applicationRepository).findByResumeIdOrderByMatchScoreDesc(resumeId);
     }
+
+    @Test
+    @DisplayName("Le droit à l'oubli efface toutes les candidatures du candidat")
+    void forgetCandidate_deletesAllApplications() {
+        UUID candidateId = UUID.randomUUID();
+        when(applicationRepository.deleteByCandidateId(candidateId)).thenReturn(3L);
+
+        assertEquals(3L, matchingService.forgetCandidate(candidateId));
+        verify(applicationRepository).deleteByCandidateId(candidateId);
+    }
 }
