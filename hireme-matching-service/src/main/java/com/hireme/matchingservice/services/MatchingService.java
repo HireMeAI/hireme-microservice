@@ -16,4 +16,10 @@ public interface MatchingService {
 
     /** Droit à l'oubli (RGPD Art. 17) : efface toutes les candidatures d'un candidat. */
     long forgetCandidate(UUID candidateId);
+
+    /** Déclenché par RESUME_UPDATED : recalcule les candidatures du CV. Retourne le nombre impacté. */
+    int onResumeUpdated(UUID resumeId, String resumeText, List<String> knownPii);
+
+    /** Déclenché par JOB_PUBLISHED : recalcule les candidatures liées à l'offre. Retourne le nombre impacté. */
+    int onJobPublished(UUID jobOfferId, String jobText);
 }

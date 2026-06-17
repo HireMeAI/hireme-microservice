@@ -52,4 +52,21 @@ public class MatchingServiceImpl implements MatchingService {
     public long forgetCandidate(UUID candidateId) {
         return applicationRepository.deleteByCandidateId(candidateId);
     }
+
+    @Override
+    @Transactional
+    public int onResumeUpdated(UUID resumeId, String resumeText, List<String> knownPii) {
+        // Candidatures existantes de ce CV à re-scorer. Le texte de l'offre associé à chaque
+        // candidature est récupéré par composition d'API (JobService) avant l'appel au moteur ML ;
+        // cette récupération est l'incrément suivant — ici on identifie et journalise le périmètre.
+        List<Application> impacted = applicationRepository.findByResumeIdOrderByMatchScoreDesc(resumeId);
+        return impacted.size();
+    }
+
+    @Override
+    @Transactional
+    public int onJobPublished(UUID jobOfferId, String jobText) {
+        List<Application> impacted = applicationRepository.findByJobOfferIdOrderByMatchScoreDesc(jobOfferId);
+        return impacted.size();
+    }
 }

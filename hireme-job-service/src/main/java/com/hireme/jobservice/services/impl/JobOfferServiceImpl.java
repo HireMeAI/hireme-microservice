@@ -6,6 +6,7 @@ import com.hireme.jobservice.domain.enums.JobStatus;
 import com.hireme.jobservice.domain.enums.RemotePolicy;
 import com.hireme.jobservice.dtos.JobOfferRequest;
 import com.hireme.jobservice.dtos.JobOfferResponse;
+import com.hireme.jobservice.events.JobEventPublisher;
 import com.hireme.jobservice.exception.ApiException;
 import com.hireme.jobservice.exception.ErrorCode;
 import com.hireme.jobservice.repositories.JobOfferRepository;
@@ -22,6 +23,7 @@ import java.util.UUID;
 public class JobOfferServiceImpl implements JobOfferService {
 
     private final JobOfferRepository repository;
+    private final JobEventPublisher jobEventPublisher;
 
     @Override
     @Transactional
@@ -39,7 +41,11 @@ public class JobOfferServiceImpl implements JobOfferService {
                 .status(req.getStatus() != null ? req.getStatus() : JobStatus.DRAFT)
                 .requiredSkills(req.getRequiredSkills() != null ? req.getRequiredSkills() : new java.util.HashSet<>())
                 .build();
-        return toResponse(repository.save(offer));
+        JobOffer saved = repository.save(offer);
+        if (saved.getStatus() == JobStatus.OPEN) {
+            jobEventPublisher.publishJobPublished(saved);
+        }
+        return toResponse(saved);
     }
 
     @Override
@@ -79,7 +85,11 @@ public class JobOfferServiceImpl implements JobOfferService {
         if (req.getRemotePolicy() != null) offer.setRemotePolicy(req.getRemotePolicy());
         if (req.getStatus() != null) offer.setStatus(req.getStatus());
         if (req.getRequiredSkills() != null) offer.setRequiredSkills(req.getRequiredSkills());
-        return toResponse(repository.save(offer));
+        JobOffer saved = repository.save(offer);
+        if (saved.getStatus() == JobStatus.OPEN) {
+            jobEventPublisher.publishJobPublished(saved);
+        }
+        return toResponse(saved);
     }
 
     @Override

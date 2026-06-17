@@ -17,12 +17,10 @@ spring:
     consumer:
       group-id: matching-service
       auto-offset-reset: earliest
+      # JSON brut (String) désérialisé explicitement par chaque listener via Jackson :
+      # robuste face à des événements de types/paquets différents provenant de plusieurs services.
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.value.default.type: com.hireme.matchingservice.events.UserDeletedEvent
-        spring.json.use.type.headers: false
-        spring.json.trusted.packages: "*"
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 server:
   port: ${APP_PORT:8084}

@@ -7,6 +7,7 @@ import com.hireme.resumeservice.domain.entities.Skill;
 import com.hireme.resumeservice.domain.entities.Template;
 import com.hireme.resumeservice.dtos.resume.ResumeRequest;
 import com.hireme.resumeservice.dtos.resume.ResumeResponse;
+import com.hireme.resumeservice.events.ResumeEventPublisher;
 import com.hireme.resumeservice.exception.ApiException;
 import com.hireme.resumeservice.exception.ErrorCode;
 import com.hireme.resumeservice.repositories.ContactRepository;
@@ -33,6 +34,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final TemplateRepository templateRepository;
     private final SkillRepository skillRepository;
     private final LanguageRepository languageRepository;
+    private final ResumeEventPublisher resumeEventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -90,7 +92,9 @@ public class ResumeServiceImpl implements ResumeService {
                 .languages(new HashSet<>())
                 .build();
 
-        return toResponse(resumeRepository.save(resume));
+        Resume saved = resumeRepository.save(resume);
+        resumeEventPublisher.publishResumeUpdated(saved);
+        return toResponse(saved);
     }
 
     @Override
@@ -125,7 +129,9 @@ public class ResumeServiceImpl implements ResumeService {
         resume.setSummary(request.summary());
         resume.setVisibility(request.visibility());
 
-        return toResponse(resumeRepository.save(resume));
+        Resume saved = resumeRepository.save(resume);
+        resumeEventPublisher.publishResumeUpdated(saved);
+        return toResponse(saved);
     }
 
     @Override
