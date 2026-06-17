@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: MatchingService
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${PG_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${PG_USERNAME}
+    password: ${PG_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+server:
+  port: ${APP_PORT:8084}
+  servlet:
+    context-path: /api
+
+ml-engine:
+  base-url: ${ML_ENGINE_URL:http://ml-engine:8000}
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/eureka/}
+
+springdoc:
+  show-actuator: false
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true

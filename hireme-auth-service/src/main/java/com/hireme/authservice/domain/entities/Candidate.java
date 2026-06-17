@@ -1,5 +1,6 @@
 package com.hireme.authservice.domain.entities;
 
+import com.hireme.authservice.configs.security.PiiAttributeConverter;
 import com.hireme.authservice.domain.enums.AvailabilityStatus;
 import com.hireme.authservice.domain.enums.ContractType;
 import jakarta.persistence.*;
@@ -20,6 +21,9 @@ import java.util.Set;
 @SuperBuilder // <--- Indispensable pour construire l'objet complet
 @EqualsAndHashCode(callSuper = true)
 public class Candidate extends User {
+    // PII en texte libre chiffrée au repos en AES-256-GCM (§7.3, RGPD Art. 32).
+    // Champ non indexé : le chiffrement non déterministe (IV aléatoire) ne casse aucune requête.
+    @Convert(converter = PiiAttributeConverter.class)
     @Column(columnDefinition = "TEXT")
     private String bio;
 
