@@ -48,6 +48,12 @@ public class MatchingServiceImpl implements MatchingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Application> getByJobOffer(UUID jobOfferId) {
+        return applicationRepository.findByJobOfferIdOrderByMatchScoreDesc(jobOfferId);
+    }
+
+    @Override
     @Transactional
     public long forgetCandidate(UUID candidateId) {
         return applicationRepository.deleteByCandidateId(candidateId);

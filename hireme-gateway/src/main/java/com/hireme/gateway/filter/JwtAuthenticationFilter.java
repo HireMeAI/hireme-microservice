@@ -35,6 +35,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/login",
             "/api/auth/register",
+            "/api/auth/recruiter/register",
             "/api/auth/refresh-token",
             "/api/auth/verify",
             // Flux d'e-mail non authentifiés (liens cliqués depuis la boîte mail).

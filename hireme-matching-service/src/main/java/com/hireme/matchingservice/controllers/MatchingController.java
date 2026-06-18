@@ -37,4 +37,13 @@ public class MatchingController {
                 .toList();
         return ResponseEntity.ok(body);
     }
+
+    @GetMapping("/job/{jobOfferId}")
+    @Operation(summary = "Lister les candidatures reçues sur une offre, triées par score décroissant")
+    public ResponseEntity<List<ApplicationResponse>> getByJobOffer(@PathVariable UUID jobOfferId) {
+        List<ApplicationResponse> body = matchingService.getByJobOffer(jobOfferId).stream()
+                .map(ApplicationResponse::from)
+                .toList();
+        return ResponseEntity.ok(body);
+    }
 }

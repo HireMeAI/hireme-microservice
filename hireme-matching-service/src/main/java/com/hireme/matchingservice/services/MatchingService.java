@@ -14,6 +14,9 @@ public interface MatchingService {
     /** Candidatures d'un CV, triées par score décroissant. */
     List<Application> getByResume(UUID resumeId);
 
+    /** Candidatures reçues sur une offre, triées par score décroissant (vue recruteur). */
+    List<Application> getByJobOffer(UUID jobOfferId);
+
     /** Droit à l'oubli (RGPD Art. 17) : efface toutes les candidatures d'un candidat. */
     long forgetCandidate(UUID candidateId);
 
