@@ -2,6 +2,7 @@ package com.hireme.authservice.services;
 
 import com.hireme.authservice.events.UserEventPublisher;
 import com.hireme.authservice.exception.ApiException;
+import com.hireme.authservice.repositories.TokenRepository;
 import com.hireme.authservice.repositories.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ class AccountDeletionServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private TokenRepository tokenRepository;
+
+    @Mock
     private UserEventPublisher eventPublisher;
 
     @InjectMocks
@@ -39,6 +43,7 @@ class AccountDeletionServiceTest {
 
         service.deleteAccount(userId);
 
+        verify(tokenRepository).deleteAllByUserId(userId);
         verify(userRepository).deleteById(userId);
         verify(eventPublisher).publishUserDeleted(userId);
     }

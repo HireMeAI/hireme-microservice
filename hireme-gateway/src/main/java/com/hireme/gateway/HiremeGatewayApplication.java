@@ -24,6 +24,12 @@ public class HiremeGatewayApplication {
                         .uri("lb://AuthService"))
                 .route("candidate-service", r -> r.path("/api/candidate/**")
                         .uri("lb://AuthService"))
+                .route("session-service", r -> r.path("/api/session/**")
+                        .uri("lb://AuthService"))
+                .route("users-service", r -> r.path("/api/users/**")
+                        .uri("lb://AuthService"))
+                .route("matching-service", r -> r.path("/api/matching/**")
+                        .uri("lb://MatchingService"))
                 .route("resume-service", r -> r.path(
                                 "/api/resumes/**",
                                 "/api/contacts/**",

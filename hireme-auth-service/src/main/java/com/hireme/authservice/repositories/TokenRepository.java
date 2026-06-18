@@ -38,4 +38,8 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
     Optional<Token> findByValue(String token);
 
     List<Token> findBySessionId(String sessionId);
+
+    @Modifying
+    @Query("delete from Token t where t.user.id = :userId")
+    void deleteAllByUserId(UUID userId);
 }

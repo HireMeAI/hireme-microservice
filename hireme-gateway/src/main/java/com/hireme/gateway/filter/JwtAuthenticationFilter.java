@@ -37,6 +37,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/register",
             "/api/auth/refresh-token",
             "/api/auth/verify",
+            // Flux d'e-mail non authentifiés (liens cliqués depuis la boîte mail).
+            "/api/auth/confirm",
+            "/api/auth/resend-verification-email",
+            "/api/auth/reset-password-email",
+            "/api/auth/reset-password/confirm",
+            "/api/auth/resetPassword",
             "/actuator"
     );
 
