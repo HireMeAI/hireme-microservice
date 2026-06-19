@@ -26,6 +26,8 @@ server:
   port: ${APP_PORT:8084}
   servlet:
     context-path: /api
+  # Permet à springdoc de déduire l'URL de la Gateway (X-Forwarded-*) pour le « Try it out ».
+  forward-headers-strategy: framework
 
 ml-engine:
   base-url: ${ML_ENGINE_URL:http://ml-engine:8000}

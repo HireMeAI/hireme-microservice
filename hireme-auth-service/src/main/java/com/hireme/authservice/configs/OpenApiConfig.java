@@ -55,9 +55,11 @@ public class OpenApiConfig {
 
     private List<Server> getServers() {
         return List.of(
+                // URL relative (= context-path) : Swagger UI la résout sur l'origine qui sert
+                // la doc — donc la Gateway (localhost:8080) en agrégé, ou le service en direct.
                 new Server()
-                        .url("http://localhost:" + serverPort + contextPath)
-                        .description("Development server")
+                        .url(contextPath.isBlank() ? "/" : contextPath)
+                        .description("Via API Gateway / service")
 //                new Server()
 //                        .url("https://staging.yourcompany.com" + contextPath)
 //                        .description("Staging server"),

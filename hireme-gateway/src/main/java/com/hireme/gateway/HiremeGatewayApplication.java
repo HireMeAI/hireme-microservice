@@ -30,6 +30,20 @@ public class HiremeGatewayApplication {
                         .uri("lb://AuthService"))
                 .route("matching-service", r -> r.path("/api/matching/**")
                         .uri("lb://MatchingService"))
+                // Agrégation OpenAPI : chaque doc est exposée sous un chemin distinct sur la
+                // Gateway puis réécrite vers l'endpoint api-docs du service (context-path /api).
+                .route("auth-docs", r -> r.path("/v3/api-docs/auth")
+                        .filters(f -> f.rewritePath("/v3/api-docs/auth", "/api/v3/api-docs"))
+                        .uri("lb://AuthService"))
+                .route("resume-docs", r -> r.path("/v3/api-docs/resumes")
+                        .filters(f -> f.rewritePath("/v3/api-docs/resumes", "/api/v3/api-docs"))
+                        .uri("lb://ResumeService"))
+                .route("job-docs", r -> r.path("/v3/api-docs/jobs")
+                        .filters(f -> f.rewritePath("/v3/api-docs/jobs", "/api/v3/api-docs"))
+                        .uri("lb://JobService"))
+                .route("matching-docs", r -> r.path("/v3/api-docs/matching")
+                        .filters(f -> f.rewritePath("/v3/api-docs/matching", "/api/v3/api-docs"))
+                        .uri("lb://MatchingService"))
                 .route("resume-service", r -> r.path(
                                 "/api/resumes/**",
                                 "/api/contacts/**",

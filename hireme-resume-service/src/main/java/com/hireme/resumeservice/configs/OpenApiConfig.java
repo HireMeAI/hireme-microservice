@@ -26,9 +26,11 @@ public class OpenApiConfig {
                         .description("API for managing resumes, experiences, education, contacts, templates, skills and languages")
                         .version("1.0.0"))
                 .servers(List.of(
+                        // URL relative (= context-path) : résolue par Swagger UI sur l'origine
+                        // qui sert la doc (la Gateway en agrégé, ou le service en direct).
                         new Server()
-                                .url("http://localhost:" + serverPort + contextPath)
-                                .description("Development server")
+                                .url(contextPath.isBlank() ? "/" : contextPath)
+                                .description("Via API Gateway / service")
                 ));
     }
 }

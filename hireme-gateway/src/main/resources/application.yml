@@ -31,3 +31,18 @@ management:
   endpoint:
     gateway:
       enabled: true
+
+# Swagger UI agrégé : http://localhost:8080/swagger-ui/index.html
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    urls:
+      - name: Auth Service
+        url: /v3/api-docs/auth
+      - name: Resume Service
+        url: /v3/api-docs/resumes
+      - name: Job Service
+        url: /v3/api-docs/jobs
+      - name: Matching Service
+        url: /v3/api-docs/matching

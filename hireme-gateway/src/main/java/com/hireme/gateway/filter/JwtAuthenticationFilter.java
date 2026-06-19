@@ -44,7 +44,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/reset-password-email",
             "/api/auth/reset-password/confirm",
             "/api/auth/resetPassword",
-            "/actuator"
+            "/actuator",
+            // Documentation OpenAPI / Swagger UI agrégée.
+            "/swagger-ui",
+            "/v3/api-docs",
+            "/webjars"
     );
 
     private final SecretKey signInKey;
