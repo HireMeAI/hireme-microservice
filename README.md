@@ -27,9 +27,11 @@ cd hireme-auth-service
 mvn test
 ```
 
-### Lancer tous les tests de tous les microservices
+### Lancer tous les tests (Java + Python)
 
-Si vous souhaitez exécuter l'ensemble des suites de tests pour l'intégralité des microservices en une seule fois, vous pouvez lancer la commande suivante à la racine de ce dossier (`hireme-microservice`) :
+Un script global a été mis en place pour lancer **l'intégralité des tests de tous les microservices** (les applications Spring Boot et le moteur Python `hireme-ml-engine`) en une seule fois. 
+
+À la racine du dossier `hireme-microservice`, lancez simplement :
 
 ```bash
 for d in eureka-server hireme-auth-service hireme-gateway hireme-job-service hireme-matching-service hireme-resume-service; do 
@@ -37,3 +39,5 @@ for d in eureka-server hireme-auth-service hireme-gateway hireme-job-service hir
   (cd "$d" && ./mvnw clean test)
 done
 ```
+
+Ce script vérifiera successivement chaque microservice Java avec `mvn test`, puis lancera les tests Python via `pytest`. Il s'arrêtera automatiquement si l'une des suites de tests échoue.
