@@ -21,7 +21,7 @@ test_java() {
             echo "------------------------------------------"
             echo "☕ Lancement des tests pour : $service"
             echo "------------------------------------------"
-            (cd "$service" && mvn test)
+            (cd "$service" && ./mvnw clean test)
             if [ $? -ne 0 ]; then
                 echo "❌ Échec des tests dans $service"
                 exit 1

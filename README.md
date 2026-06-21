@@ -34,6 +34,6 @@ Si vous souhaitez exécuter l'ensemble des suites de tests pour l'intégralité 
 ```bash
 for d in eureka-server hireme-auth-service hireme-gateway hireme-job-service hireme-matching-service hireme-resume-service; do 
   echo "Lancement des tests pour $d..."
-  (cd "$d" && mvn test)
+  (cd "$d" && ./mvnw clean test)
 done
 ```
