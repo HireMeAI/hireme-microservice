@@ -34,10 +34,7 @@ Un script global a été mis en place pour lancer **l'intégralité des tests de
 À la racine du dossier `hireme-microservice`, lancez simplement :
 
 ```bash
-for d in eureka-server hireme-auth-service hireme-gateway hireme-job-service hireme-matching-service hireme-resume-service; do 
-  echo "Lancement des tests pour $d..."
-  (cd "$d" && ./mvnw clean test)
-done
+./run-all-tests.sh
 ```
 
 Ce script vérifiera successivement chaque microservice Java avec `mvn test`, puis lancera les tests Python via `pytest`. Il s'arrêtera automatiquement si l'une des suites de tests échoue.
