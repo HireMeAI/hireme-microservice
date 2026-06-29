@@ -1,5 +1,6 @@
 package com.hireme.matchingservice.services;
 
+import com.hireme.matchingservice.client.Recommendation;
 import com.hireme.matchingservice.domain.entities.Application;
 import com.hireme.matchingservice.dtos.ApplyRequest;
 
@@ -10,6 +11,9 @@ public interface MatchingService {
 
     /** Crée une candidature en déléguant le calcul du score au moteur ML, puis le persiste. */
     Application apply(ApplyRequest request);
+
+  
+    List<Recommendation> recommend(String resumeText, List<String> knownPii, int topN);
 
     /** Candidatures d'un CV, triées par score décroissant. */
     List<Application> getByResume(UUID resumeId);

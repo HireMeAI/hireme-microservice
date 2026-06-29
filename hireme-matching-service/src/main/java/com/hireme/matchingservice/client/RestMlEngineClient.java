@@ -52,4 +52,44 @@ public class RestMlEngineClient implements MlEngineClient {
         log.warn("Circuit Breaker ouvert / Moteur ML indisponible. Score neutre appliqué. Raison : {}", throwable.getMessage());
         return 0.0;
     }
+
+    @Override
+    @CircuitBreaker(name = "mlEngine", fallbackMethod = "fallbackRecommend")
+    public List<Recommendation> recommend(String resumeText, List<JobDoc> jobs, List<String> knownPii, int topN) {
+        List<Map<String, String>> jobsBody = (jobs == null ? List.<JobDoc>of() : jobs).stream()
+                .map(j -> Map.of("id", j.id() == null ? "" : j.id(),
+                                 "text", j.text() == null ? "" : j.text()))
+                .toList();
+        Map<String, Object> body = Map.of(
+                "resume_text", resumeText == null ? "" : resumeText,
+                "jobs", jobsBody,
+                "known_pii", knownPii == null ? List.of() : knownPii,
+                "top_n", topN);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> response = restClient.post()
+                .uri("/match")
+                .body(body)
+                .retrieve()
+                .body(Map.class);
+
+        if (response == null || response.get("matches") == null) {
+            return List.of();
+        }
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> matches = (List<Map<String, Object>>) response.get("matches");
+        return matches.stream()
+                .map(m -> {
+                    @SuppressWarnings("unchecked")
+                    List<String> terms = (List<String>) m.getOrDefault("shared_terms", List.of());
+                    double score = m.get("score") == null ? 0.0 : ((Number) m.get("score")).doubleValue();
+                    return new Recommendation(String.valueOf(m.get("job_id")), score, terms);
+                })
+                .toList();
+    }
+
+    public List<Recommendation> fallbackRecommend(String resumeText, List<JobDoc> jobs, List<String> knownPii, int topN, Throwable throwable) {
+        log.warn("Circuit Breaker ouvert / Moteur ML indisponible. Recommandations vides. Raison : {}", throwable.getMessage());
+        return List.of();
+    }
 }

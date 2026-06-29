@@ -1,6 +1,9 @@
 package com.hireme.matchingservice.services.impl;
 
+import com.hireme.matchingservice.client.JobCatalogClient;
+import com.hireme.matchingservice.client.JobDoc;
 import com.hireme.matchingservice.client.MlEngineClient;
+import com.hireme.matchingservice.client.Recommendation;
 import com.hireme.matchingservice.domain.entities.Application;
 import com.hireme.matchingservice.domain.enums.ApplicationStatus;
 import com.hireme.matchingservice.dtos.ApplyRequest;
@@ -19,6 +22,7 @@ public class MatchingServiceImpl implements MatchingService {
 
     private final ApplicationRepository applicationRepository;
     private final MlEngineClient mlEngineClient;
+    private final JobCatalogClient jobCatalogClient;
 
     @Override
     @Transactional
@@ -39,6 +43,18 @@ public class MatchingServiceImpl implements MatchingService {
                 .build();
 
         return applicationRepository.save(application);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Recommendation> recommend(String resumeText, List<String> knownPii, int topN) {
+        // Composition d'API : on récupère les offres ouvertes (job-service)...
+        List<JobDoc> openJobs = jobCatalogClient.fetchOpenJobs();
+        if (openJobs.isEmpty()) {
+            return List.of();
+        }
+        // ...puis on délègue le classement Top-N au moteur ML (anonymisation + TF-IDF + cosinus).
+        return mlEngineClient.recommend(resumeText, openJobs, knownPii, topN);
     }
 
     @Override

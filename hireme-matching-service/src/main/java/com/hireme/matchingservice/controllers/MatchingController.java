@@ -2,6 +2,8 @@ package com.hireme.matchingservice.controllers;
 
 import com.hireme.matchingservice.dtos.ApplicationResponse;
 import com.hireme.matchingservice.dtos.ApplyRequest;
+import com.hireme.matchingservice.dtos.RecommendRequest;
+import com.hireme.matchingservice.dtos.RecommendationResponse;
 import com.hireme.matchingservice.services.MatchingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +29,17 @@ public class MatchingController {
     public ResponseEntity<ApplicationResponse> apply(@Valid @RequestBody ApplyRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApplicationResponse.from(matchingService.apply(request)));
+    }
+
+    @PostMapping("/recommendations")
+    @Operation(summary = "Recommander les offres ouvertes les plus pertinentes pour un CV (Top-N)")
+    public ResponseEntity<List<RecommendationResponse>> recommend(@Valid @RequestBody RecommendRequest request) {
+        List<RecommendationResponse> body = matchingService
+                .recommend(request.resumeText(), request.knownPii(), request.topNOrDefault())
+                .stream()
+                .map(RecommendationResponse::from)
+                .toList();
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/{resumeId}")
