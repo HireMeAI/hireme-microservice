@@ -12,6 +12,8 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
 
     List<Application> findByJobOfferIdOrderByMatchScoreDesc(UUID jobOfferId);
 
+    boolean existsByCandidateIdAndJobOfferId(UUID candidateId, UUID jobOfferId);
+
     /** Droit à l'oubli (RGPD Art. 17) : suppression de toutes les candidatures d'un candidat. */
     long deleteByCandidateId(UUID candidateId);
 }

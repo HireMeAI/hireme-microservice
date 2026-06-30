@@ -27,6 +27,14 @@ public class MatchingServiceImpl implements MatchingService {
     @Override
     @Transactional
     public Application apply(ApplyRequest request) {
+        // Validation : Un candidat ne peut pas postuler deux fois à la même offre.
+        if (applicationRepository.existsByCandidateIdAndJobOfferId(request.candidateId(), request.jobOfferId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Vous avez déjà postulé à cette offre."
+            );
+        }
+
         // 1. Délégation du calcul scientifique au moteur Python (anonymisation + TF-IDF + cosinus).
         double score = mlEngineClient.computeScore(
                 request.resumeText(), request.jobText(), request.knownPii());
