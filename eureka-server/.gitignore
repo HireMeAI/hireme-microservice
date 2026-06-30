@@ -31,12 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-.env
-
-hireme-frontend
-.claude/settings.json
-hireme-resume-service/.DS_Store
-hireme-matching-service/.DS_Store
-hireme-job-service/.DS_Store
-hireme-auth-service/.DS_Store
-/.DS_Store

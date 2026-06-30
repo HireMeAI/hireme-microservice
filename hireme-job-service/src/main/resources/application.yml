@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: JobService
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${PG_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${PG_USERNAME}
+    password: ${PG_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: ${APP_PORT:8083}
+  servlet:
+    context-path: /api
+  # Permet à springdoc de déduire l'URL de la Gateway (X-Forwarded-*) pour le « Try it out ».
+  forward-headers-strategy: framework
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/eureka/}
+
+springdoc:
+  show-actuator: false
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    filter: true
+    doc-expansion: none
+    deep-linking: true
+    display-request-duration: true

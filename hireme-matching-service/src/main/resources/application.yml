@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: MatchingService
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${PG_URL}
+    driver-class-name: org.postgresql.Driver
+    username: ${PG_USERNAME}
+    password: ${PG_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: matching-service
+      auto-offset-reset: earliest
+      # JSON brut (String) désérialisé explicitement par chaque listener via Jackson :
+      # robuste face à des événements de types/paquets différents provenant de plusieurs services.
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+server:
+  port: ${APP_PORT:8084}
+  servlet:
+    context-path: /api
+  # Permet à springdoc de déduire l'URL de la Gateway (X-Forwarded-*) pour le « Try it out ».
+  forward-headers-strategy: framework
+
+ml-engine:
+  base-url: ${ML_ENGINE_URL:http://ml-engine:8000}
+
+job-service:
+  base-url: ${JOB_SERVICE_URL:http://job-service:8083/api}
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/eureka/}
+
+springdoc:
+  show-actuator: false
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true

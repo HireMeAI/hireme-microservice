@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: Gateway
+  config:
+    import: optional:file:.env[.properties]
+  # Doit être identique au secret de l'AuthService pour vérifier la signature des JWT.
+  jwt:
+    secret: ${JWT_SECRET:7a45678901234567890123456789012345678901234567890123456789012345}
+
+hireme:
+  cors:
+    allowed-origins: ${HIREME_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+server:
+  port: ${GATEWAY_PORT:-8080}
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gateway
+  endpoint:
+    gateway:
+      enabled: true
+
+# Swagger UI agrégé : http://localhost:8080/swagger-ui/index.html
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    urls:
+      - name: Auth Service
+        url: /v3/api-docs/auth
+      - name: Resume Service
+        url: /v3/api-docs/resumes
+      - name: Job Service
+        url: /v3/api-docs/jobs
+      - name: Matching Service
+        url: /v3/api-docs/matching
