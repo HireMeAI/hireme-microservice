@@ -99,4 +99,16 @@ public class MatchingServiceImpl implements MatchingService {
         List<Application> impacted = applicationRepository.findByJobOfferIdOrderByMatchScoreDesc(jobOfferId);
         return impacted.size();
     }
+
+    @Override
+    @Transactional
+    public Application updateStatus(UUID id, com.hireme.matchingservice.domain.enums.ApplicationStatus status) {
+        Application application = applicationRepository.findById(id)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "Candidature introuvable."
+                ));
+        application.setStatus(status);
+        return applicationRepository.save(application);
+    }
 }

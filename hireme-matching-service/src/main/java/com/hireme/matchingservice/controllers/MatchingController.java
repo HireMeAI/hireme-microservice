@@ -59,4 +59,13 @@ public class MatchingController {
                 .toList();
         return ResponseEntity.ok(body);
     }
+
+    @PatchMapping("/applications/{id}/status")
+    @Operation(summary = "Mettre à jour le statut d'une candidature")
+    public ResponseEntity<ApplicationResponse> updateStatus(
+            @PathVariable UUID id,
+            @RequestParam com.hireme.matchingservice.domain.enums.ApplicationStatus status
+    ) {
+        return ResponseEntity.ok(ApplicationResponse.from(matchingService.updateStatus(id, status)));
+    }
 }

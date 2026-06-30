@@ -12,6 +12,8 @@ public interface MatchingService {
     /** Crée une candidature en déléguant le calcul du score au moteur ML, puis le persiste. */
     Application apply(ApplyRequest request);
 
+    Application updateStatus(UUID id, com.hireme.matchingservice.domain.enums.ApplicationStatus status);
+
   
     List<Recommendation> recommend(String resumeText, List<String> knownPii, int topN);
 
