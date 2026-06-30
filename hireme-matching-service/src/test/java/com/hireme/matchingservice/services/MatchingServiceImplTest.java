@@ -1,6 +1,9 @@
 package com.hireme.matchingservice.services;
 
+import com.hireme.matchingservice.client.JobCatalogClient;
+import com.hireme.matchingservice.client.JobDoc;
 import com.hireme.matchingservice.client.MlEngineClient;
+import com.hireme.matchingservice.client.Recommendation;
 import com.hireme.matchingservice.domain.entities.Application;
 import com.hireme.matchingservice.domain.enums.ApplicationStatus;
 import com.hireme.matchingservice.dtos.ApplyRequest;
@@ -34,6 +37,9 @@ class MatchingServiceImplTest {
 
     @Mock
     private MlEngineClient mlEngineClient;
+
+    @Mock
+    private JobCatalogClient jobCatalogClient;
 
     @InjectMocks
     private MatchingServiceImpl matchingService;
@@ -107,5 +113,32 @@ class MatchingServiceImplTest {
 
         assertEquals(2, matchingService.onResumeUpdated(resumeId, "java spring", List.of()));
         verify(applicationRepository).findByResumeIdOrderByMatchScoreDesc(resumeId);
+    }
+
+    @Test
+    @DisplayName("recommend récupère les offres ouvertes puis délègue le classement Top-N au moteur ML")
+    void recommend_fetchesOpenJobsThenDelegates() {
+        List<JobDoc> openJobs = List.of(new JobDoc("job-1", "java spring"), new JobDoc("job-2", "react css"));
+        when(jobCatalogClient.fetchOpenJobs()).thenReturn(openJobs);
+        when(mlEngineClient.recommend(anyString(), eq(openJobs), anyList(), eq(5)))
+                .thenReturn(List.of(new Recommendation("job-1", 0.9, List.of("java", "spring"))));
+
+        List<Recommendation> res = matchingService.recommend("cv java spring", List.of("Jean"), 5);
+
+        assertEquals(1, res.size());
+        assertEquals("job-1", res.get(0).jobId());
+        verify(jobCatalogClient).fetchOpenJobs();
+        verify(mlEngineClient).recommend("cv java spring", openJobs, List.of("Jean"), 5);
+    }
+
+    @Test
+    @DisplayName("recommend court-circuite le moteur ML quand aucune offre n'est ouverte")
+    void recommend_noOpenJobs_skipsEngine() {
+        when(jobCatalogClient.fetchOpenJobs()).thenReturn(List.of());
+
+        List<Recommendation> res = matchingService.recommend("cv java", List.of(), 10);
+
+        assertTrue(res.isEmpty());
+        verify(mlEngineClient, never()).recommend(anyString(), anyList(), anyList(), anyInt());
     }
 }

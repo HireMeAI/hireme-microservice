@@ -13,11 +13,15 @@
  * Tous les comptes seedés partagent le mot de passe défini ci-dessous (SEED_PASSWORD).
  */
 
+import { writeFileSync } from 'node:fs';
+
 const BASE = process.env.HIREME_API || 'http://localhost:8080';
 const MAILPIT = process.env.MAILPIT_API || 'http://localhost:8025';
 const SEED_PASSWORD = process.env.SEED_PASSWORD || 'Password123!';
 const N_RECRUITERS = parseInt(process.env.RECRUITERS || '6', 10);
 const N_CANDIDATES = parseInt(process.env.CANDIDATES || '20', 10);
+// Fichier de vérité terrain pour l'évaluation du modèle ML (cf. ../hireme-ml-engine/evaluate.py).
+const GOLDEN_OUT = process.env.GOLDEN_OUT || 'golden_set.csv';
 
 /* ------------------------------------------------------------------ utils */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -41,6 +45,9 @@ async function http(method, path, { token, body, ip } = {}) {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    // /api/auth/confirm répond par une redirection 302 vers le frontend (:5173).
+    // 'manual' évite que fetch la suive (le frontend n'est pas forcément démarré).
+    redirect: 'manual',
   });
   const text = await res.text();
   let data = null;
@@ -131,6 +138,19 @@ const DOMAINS = {
 };
 const DOMAIN_KEYS = Object.keys(DOMAINS);
 
+// Déduit le domaine d'une offre existante à partir de ses compétences/titre (domaines
+// à compétences disjointes). Évite d'attribuer un domaine aléatoire aux offres réutilisées,
+// ce qui fausserait la vérité terrain (golden_set.csv). Fallback : 1er domaine.
+function inferDomain(job) {
+  const hay = `${job.title || ''} ${(job.requiredSkills || []).join(' ')}`.toLowerCase();
+  let best = DOMAIN_KEYS[0], bestScore = -1;
+  for (const key of DOMAIN_KEYS) {
+    const score = DOMAINS[key].skills.filter((s) => hay.includes(s.toLowerCase())).length;
+    if (score > bestScore) { bestScore = score; best = key; }
+  }
+  return best;
+}
+
 const DEGREES = ['Master Informatique', 'Diplôme d\'Ingénieur', 'Licence Pro Développement', 'Master Data Science', 'BUT Informatique'];
 const SCHOOLS = ['Université Paris-Saclay', 'EPITECH', 'INSA Lyon', 'École 42', 'CentraleSupélec', 'IMT Atlantique'];
 
@@ -160,7 +180,7 @@ async function seedRecruitersAndJobs() {
     // Idempotence : si ce recruteur a déjà des offres (run précédent), on les réutilise.
     const existing = await http('GET', `/api/jobs/recruiter/${rec.user.id}`, { token: rec.token });
     if (Array.isArray(existing.data) && existing.data.length > 0) {
-      existing.data.forEach((j) => jobs.push({ ...j, domain: rand(DOMAIN_KEYS) }));
+      existing.data.forEach((j) => jobs.push({ ...j, domain: inferDomain(j) }));
       console.log(`  ↺ recruteur ${email} → ${existing.data.length} offres existantes réutilisées`);
       continue;
     }
@@ -197,6 +217,7 @@ async function seedRecruitersAndJobs() {
 
 async function seedCandidatesAndApplications(jobs, skillMap) {
   const samples = [];
+  const golden = []; // { domain, text } de chaque CV créé, pour la vérité terrain.
   for (let i = 0; i < N_CANDIDATES; i++) {
     const firstName = rand(FIRST), lastName = rand(LAST);
     const email = `candidat${i + 1}@seed.hireme.dev`;
@@ -327,10 +348,34 @@ async function seedCandidatesAndApplications(jobs, skillMap) {
       });
       if (a.ok) { applied++; okCount++; } else { failCount++; }
     }
+    golden.push({ domain, text: resumeText });
     console.log(`  ✅ candidat ${email} (${domain}) → CV + ${applied} candidatures`);
     if (samples.length < 3) samples.push(email);
   }
-  return samples;
+  return { samples, golden };
+}
+
+/**
+ * Écrit golden_set.csv : chaque CV créé est croisé avec CHAQUE offre.
+ * pertinent = 1 si même domaine, sinon 0. C'est la vérité terrain consommée par
+ * evaluate.py (--from-csv) pour mesurer le modèle sur les textes réels de la pipeline.
+ */
+function writeGoldenSet(goldenCandidates, jobs) {
+  if (goldenCandidates.length === 0) {
+    console.log('  ⚠️  Aucun CV neuf créé (DB déjà seedée ?) — golden_set non écrit.');
+    return;
+  }
+  const cell = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+  const rows = ['cv_domain,job_domain,relevant,cv_text,job_text'];
+  for (const c of goldenCandidates) {
+    for (const job of jobs) {
+      const jobText = `${job.title}. ${job.description}. Compétences requises: ${(job.requiredSkills || []).join(', ')}.`;
+      const relevant = job.domain === c.domain ? 1 : 0;
+      rows.push([cell(c.domain), cell(job.domain), relevant, cell(c.text), cell(jobText)].join(','));
+    }
+  }
+  writeFileSync(GOLDEN_OUT, rows.join('\n') + '\n', 'utf8');
+  console.log(`  📄 ${GOLDEN_OUT} écrit : ${goldenCandidates.length} CV × ${jobs.length} offres = ${rows.length - 1} couples étiquetés.`);
 }
 
 /* ----------------------------------------------------------------- main */
@@ -355,7 +400,10 @@ async function seedCandidatesAndApplications(jobs, skillMap) {
   console.log(`   ${Object.keys(skillMap).length} compétences disponibles`);
 
   console.log('\n👤 Candidats, CV & candidatures…');
-  const samples = await seedCandidatesAndApplications(jobs, skillMap);
+  const { samples, golden } = await seedCandidatesAndApplications(jobs, skillMap);
+
+  console.log('\n🎯 Vérité terrain (évaluation ML)…');
+  writeGoldenSet(golden, jobs);
 
   console.log(`\n✨ Terminé. ${okCount} entités créées, ${failCount} échecs.`);
   console.log(`   Offres ouvertes : ${jobs.length}`);

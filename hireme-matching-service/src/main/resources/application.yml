@@ -32,6 +32,9 @@ server:
 ml-engine:
   base-url: ${ML_ENGINE_URL:http://ml-engine:8000}
 
+job-service:
+  base-url: ${JOB_SERVICE_URL:http://job-service:8083/api}
+
 eureka:
   instance:
     prefer-ip-address: true
